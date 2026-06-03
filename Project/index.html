@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LITIK — Literasi Teknologi Informasi & Komputer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ====== SCREENS ====== -->
+<div id="app">
+
+  <!-- SPLASH -->
+  <div class="screen active" id="screen-splash">
+    <div class="splash-content">
+      <div class="splash-logo">
+        <span class="logo-bit">01</span>
+        <span class="logo-name">LITIK</span>
+      </div>
+      <p class="splash-sub">Literasi Teknologi Informasi &amp; Komputer</p>
+      <div class="splash-bits">
+        <span>1</span><span>0</span><span>1</span><span>1</span><span>0</span><span>0</span><span>1</span><span>0</span>
+      </div>
+      <button class="btn-primary" onclick="showScreen('screen-login')">Mulai Belajar</button>
+    </div>
+  </div>
+
+  <!-- LOGIN -->
+  <div class="screen" id="screen-login">
+    <div class="auth-card">
+      <div class="auth-illo">
+        <svg viewBox="0 0 120 100" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="20" width="80" height="55" rx="6" fill="#2563eb" opacity=".15"/>
+          <rect x="25" y="25" width="70" height="45" rx="4" fill="#2563eb" opacity=".25"/>
+          <rect x="35" y="38" width="50" height="6" rx="3" fill="#2563eb"/>
+          <rect x="35" y="50" width="50" height="6" rx="3" fill="#2563eb" opacity=".6"/>
+          <circle cx="85" cy="22" r="12" fill="#3b82f6"/>
+          <text x="85" y="27" text-anchor="middle" font-size="12" fill="white" font-weight="bold">?</text>
+        </svg>
+      </div>
+      <h2>Login</h2>
+      <div class="form-group">
+        <span class="input-icon">👤</span>
+        <input type="text" id="login-user" placeholder="Username" />
+      </div>
+      <div class="form-group">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="login-pass" placeholder="Password" />
+      </div>
+      <p class="form-error" id="login-error"></p>
+      <button class="btn-primary" onclick="doLogin()">Login</button>
+      <p class="auth-switch">Belum punya akun? <a href="#" onclick="showScreen('screen-register')">Register</a></p>
+    </div>
+  </div>
+
+  <!-- REGISTER -->
+  <div class="screen" id="screen-register">
+    <div class="auth-card">
+      <button class="btn-back" onclick="showScreen('screen-login')">←</button>
+      <h2>Register</h2>
+      <div class="form-group">
+        <span class="input-icon">👤</span>
+        <input type="text" id="reg-name" placeholder="Nama Lengkap" />
+      </div>
+      <div class="form-group">
+        <span class="input-icon">📧</span>
+        <input type="text" id="reg-user" placeholder="Username" />
+      </div>
+      <div class="form-group">
+        <span class="input-icon">🔒</span>
+        <input type="password" id="reg-pass" placeholder="Password" />
+      </div>
+      <p class="form-error" id="reg-error"></p>
+      <button class="btn-primary" onclick="doRegister()">Daftar</button>
+      <p class="auth-switch">Sudah punya akun? <a href="#" onclick="showScreen('screen-login')">Login</a></p>
+    </div>
+  </div>
+
+  <!-- HOME (BELAJAR) -->
+  <div class="screen" id="screen-home">
+    <div class="home-header">
+      <div>
+        <p class="greeting">Halo, <span id="display-name">Pengguna</span> 👋</p>
+        <p class="sub-greeting">Ingin belajar apa hari ini?</p>
+      </div>
+      <div class="header-score-badge"><span id="header-score">0</span> pts</div>
+    </div>
+    <div class="topic-grid">
+      <div class="topic-card" onclick="showMateri('biner')">
+        <div class="topic-icon">🔢</div>
+        <h3>Sistem Bilangan</h3>
+        <p>Pengenalan bilangan biner, oktal & heksadesimal</p>
+      </div>
+      <div class="topic-card" onclick="showMateri('desimal-biner')">
+        <div class="topic-icon">🔄</div>
+        <h3>Desimal → Biner</h3>
+        <p>Konversi bilangan desimal ke biner</p>
+      </div>
+      <div class="topic-card" onclick="showMateri('biner-desimal')">
+        <div class="topic-icon">↩️</div>
+        <h3>Biner → Desimal</h3>
+        <p>Konversi bilangan biner ke desimal</p>
+      </div>
+      <div class="topic-card" onclick="showMateri('desimal-oktal')">
+        <div class="topic-icon">8️⃣</div>
+        <h3>Desimal → Oktal</h3>
+        <p>Konversi bilangan desimal ke oktal</p>
+      </div>
+      <div class="topic-card" onclick="showMateri('desimal-hex')">
+        <div class="topic-icon">🔡</div>
+        <h3>Desimal → Heks</h3>
+        <p>Konversi bilangan desimal ke heksadesimal</p>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn active" onclick="switchTab('home')"><span>📚</span>Belajar</button>
+      <button class="nav-btn" onclick="switchTab('kuis')"><span>❓</span>Kuis</button>
+      <button class="nav-btn" onclick="switchTab('skor')"><span>📊</span>Skor</button>
+      <button class="nav-btn" onclick="switchTab('profil')"><span>👤</span>Profil</button>
+    </div>
+  </div>
+
+  <!-- MATERI -->
+  <div class="screen" id="screen-materi">
+    <div class="materi-header">
+      <button class="btn-back-light" onclick="showScreen('screen-home')">←</button>
+      <h2 id="materi-title">Materi</h2>
+    </div>
+    <div class="materi-body" id="materi-body"></div>
+  </div>
+
+  <!-- KUIS -->
+  <div class="screen" id="screen-kuis">
+    <div class="home-header">
+      <div>
+        <p class="greeting">Kuis Konversi 🧠</p>
+        <p class="sub-greeting">Uji kemampuanmu!</p>
+      </div>
+    </div>
+    <div class="kuis-card-preview">
+      <div class="kuis-preview-info">
+        <h2>Kuis Konversi<br>Bilangan Biner</h2>
+        <p>🗒️ 10 Soal</p>
+        <p>⏱️ 15 detik / soal</p>
+        <button class="btn-primary" onclick="startKuis()">MULAI</button>
+      </div>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="switchTab('home')"><span>📚</span>Belajar</button>
+      <button class="nav-btn active" onclick="switchTab('kuis')"><span>❓</span>Kuis</button>
+      <button class="nav-btn" onclick="switchTab('skor')"><span>📊</span>Skor</button>
+      <button class="nav-btn" onclick="switchTab('profil')"><span>👤</span>Profil</button>
+    </div>
+  </div>
+
+  <!-- KUIS ACTIVE -->
+  <div class="screen" id="screen-kuis-active">
+    <div class="kuis-header">
+      <span id="kuis-q-num">1 / 10</span>
+      <div class="kuis-timer-wrap">
+        <div class="kuis-timer-bar"><div id="kuis-timer-fill"></div></div>
+        <span id="kuis-timer-text">15</span>
+      </div>
+    </div>
+    <div class="kuis-question-box">
+      <p id="kuis-question">Pertanyaan...</p>
+    </div>
+    <div class="kuis-options" id="kuis-options"></div>
+  </div>
+
+  <!-- KUIS RESULT -->
+  <div class="screen" id="screen-kuis-result">
+    <div class="result-box">
+      <div class="result-trophy">🏆</div>
+      <h2>Kuis Selesai!</h2>
+      <div class="result-stat">
+        <div class="stat-item"><span id="res-benar">0</span><label>Benar</label></div>
+        <div class="stat-item"><span id="res-salah">0</span><label>Salah</label></div>
+        <div class="stat-item"><span id="res-pts">0</span><label>Poin</label></div>
+      </div>
+      <button class="btn-primary" onclick="showScreen('screen-home'); switchTab('home')">Kembali ke Beranda</button>
+      <button class="btn-secondary" onclick="startKuis()">Coba Lagi</button>
+    </div>
+  </div>
+
+  <!-- SKOR -->
+  <div class="screen" id="screen-skor">
+    <div class="home-header"><p class="greeting">Papan Skor 🏅</p></div>
+    <div class="leaderboard" id="leaderboard-list"></div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="switchTab('home')"><span>📚</span>Belajar</button>
+      <button class="nav-btn" onclick="switchTab('kuis')"><span>❓</span>Kuis</button>
+      <button class="nav-btn active" onclick="switchTab('skor')"><span>📊</span>Skor</button>
+      <button class="nav-btn" onclick="switchTab('profil')"><span>👤</span>Profil</button>
+    </div>
+  </div>
+
+  <!-- PROFIL -->
+  <div class="screen" id="screen-profil">
+    <div class="profil-header">
+      <div class="profil-avatar" id="profil-avatar">P</div>
+      <h2 id="profil-name">People</h2>
+      <p id="profil-username">@people</p>
+    </div>
+    <div class="profil-stats">
+      <div class="pstat"><span id="profil-best">0</span><label>Skor Terbaik</label></div>
+      <div class="pstat"><span id="profil-total">0</span><label>Total Skor</label></div>
+      <div class="pstat"><span id="profil-quizzes">0</span><label>Kuis Selesai</label></div>
+    </div>
+    <div class="profil-actions">
+      <button class="btn-secondary" onclick="doLogout()">Logout</button>
+    </div>
+    <div class="bottom-nav">
+      <button class="nav-btn" onclick="switchTab('home')"><span>📚</span>Belajar</button>
+      <button class="nav-btn" onclick="switchTab('kuis')"><span>❓</span>Kuis</button>
+      <button class="nav-btn" onclick="switchTab('skor')"><span>📊</span>Skor</button>
+      <button class="nav-btn active" onclick="switchTab('profil')"><span>👤</span>Profil</button>
+    </div>
+  </div>
+
+</div><!-- end #app -->
+
+<script src="app.js"></script>
+</body>
+</html>
