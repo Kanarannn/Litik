@@ -341,17 +341,16 @@ const QUESTIONS = [
   { q: 'Bilangan biner 1010 jika dikonversi ke desimal menjadi ....', opts: ['8', '9', '10', '11'], ans: 2 },
 ];
 
-let kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 20 };
+let kuisState = { idx: 0, score: 0, benar: 0, salah: 0 };
 const LABELS = ['A', 'B', 'C', 'D'];
 
 function startKuis() {
-  kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 20 };
+  kuisState = { idx: 0, score: 0, benar: 0, salah: 0 };
   showScreen('screen-kuis-active');
   renderQuestion();
 }
 
 function renderQuestion() {
-  clearInterval(kuisState.timer);
   const q = QUESTIONS[kuisState.idx];
   document.getElementById('kuis-q-num').textContent = `${kuisState.idx + 1} / ${QUESTIONS.length}`;
   document.getElementById('kuis-question').textContent = q.q;
@@ -364,32 +363,9 @@ function renderQuestion() {
     btn.onclick = () => selectAnswer(i);
     optsCont.appendChild(btn);
   });
-  startTimer();
-}
-
-function startTimer() {
-  kuisState.timeLeft = 20;
-  updateTimerUI(20);
-  kuisState.timer = setInterval(() => {
-    kuisState.timeLeft--;
-    updateTimerUI(kuisState.timeLeft);
-    if (kuisState.timeLeft <= 0) {
-      clearInterval(kuisState.timer);
-      highlightAnswer(-1);
-      setTimeout(nextQuestion, 1200);
-    }
-  }, 1000);
-}
-
-function updateTimerUI(t) {
-  document.getElementById('kuis-timer-text').textContent = t;
-  const fill = document.getElementById('kuis-timer-fill');
-  fill.style.width = `${(t / 15) * 100}%`;
-  fill.style.background = t > 7 ? '#fbbf24' : t > 3 ? '#f97316' : '#ef4444';
 }
 
 function selectAnswer(idx) {
-  clearInterval(kuisState.timer);
   highlightAnswer(idx);
   if (idx === QUESTIONS[kuisState.idx].ans) {
     kuisState.benar++;
