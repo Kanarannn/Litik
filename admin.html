@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BinerIn — Admin Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #2563eb;
+      --primary-light: #3b82f6;
+      --primary-pale: #dbeafe;
+      --accent: #06b6d4;
+      --success: #10b981;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --bg: #f0f4ff;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --radius: 14px;
+      --shadow: 0 4px 24px rgba(37,99,235,.1);
+      --sidebar-w: 220px;
+    }
+    html, body { height: 100%; font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); }
+
+    /* ── LOGIN ── */
+    #login-overlay {
+      position: fixed; inset: 0; background: linear-gradient(145deg,#1e3a8a,#2563eb,#06b6d4);
+      display: flex; align-items: center; justify-content: center; z-index: 999;
+    }
+    #login-overlay.hidden { display: none; }
+    .login-box {
+      background: white; border-radius: 24px; padding: 40px 36px;
+      width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.25);
+      text-align: center;
+    }
+    .login-box .logo { font-size: 40px; font-weight: 900; color: var(--primary); letter-spacing: 4px; margin-bottom: 6px; }
+    .login-box .logo-sub { font-size: 12px; color: var(--muted); letter-spacing: 2px; margin-bottom: 28px; text-transform: uppercase; }
+    .login-box input {
+      width: 100%; padding: 13px 16px; border: 2px solid var(--border); border-radius: 10px;
+      font-family: 'Nunito', sans-serif; font-size: 15px; margin-bottom: 12px; outline: none;
+      transition: border-color .2s;
+    }
+    .login-box input:focus { border-color: var(--primary); }
+    .login-box .err { color: var(--danger); font-size: 13px; min-height: 18px; margin-bottom: 8px; }
+    .btn-login {
+      width: 100%; padding: 14px; background: linear-gradient(135deg,var(--primary),var(--primary-light));
+      color: white; border: none; border-radius: 10px; font-family: 'Nunito', sans-serif;
+      font-size: 16px; font-weight: 800; cursor: pointer; transition: opacity .2s;
+    }
+    .btn-login:hover { opacity: .9; }
+
+    /* ── LAYOUT ── */
+    #app { display: flex; min-height: 100vh; }
+    #app.hidden { display: none; }
+
+    /* ── SIDEBAR ── */
+    aside {
+      width: var(--sidebar-w); background: linear-gradient(180deg,#1e3a8a,#2563eb);
+      color: white; display: flex; flex-direction: column; position: fixed; top: 0; left: 0;
+      height: 100vh; z-index: 50; padding: 0;
+    }
+    .sidebar-logo {
+      padding: 28px 20px 20px; border-bottom: 1px solid rgba(255,255,255,.12);
+    }
+    .sidebar-logo .name { font-size: 22px; font-weight: 900; letter-spacing: 2px; }
+    .sidebar-logo .role { font-size: 11px; opacity: .6; letter-spacing: 1px; margin-top: 2px; }
+    nav { flex: 1; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+    .nav-item {
+      display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px;
+      cursor: pointer; font-size: 14px; font-weight: 700; color: rgba(255,255,255,.7);
+      transition: all .2s; border: none; background: none; width: 100%; text-align: left;
+    }
+    .nav-item:hover { background: rgba(255,255,255,.12); color: white; }
+    .nav-item.active { background: rgba(255,255,255,.2); color: white; }
+    .nav-item .icon { font-size: 18px; width: 24px; text-align: center; }
+    .sidebar-bottom { padding: 16px 12px; border-top: 1px solid rgba(255,255,255,.12); }
+    .btn-logout {
+      display: flex; align-items: center; gap: 10px; padding: 11px 16px; border-radius: 10px;
+      background: rgba(239,68,68,.2); color: #fca5a5; border: none; cursor: pointer;
+      font-family: 'Nunito', sans-serif; font-size: 14px; font-weight: 700; width: 100%;
+      transition: background .2s;
+    }
+    .btn-logout:hover { background: rgba(239,68,68,.35); }
+
+    /* ── MAIN ── */
+    main { margin-left: var(--sidebar-w); flex: 1; padding: 28px; min-height: 100vh; }
+    .page { display: none; }
+    .page.active { display: block; }
+    .page-title { font-size: 22px; font-weight: 900; color: var(--text); margin-bottom: 6px; }
+    .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+    /* ── STAT CARDS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 16px; margin-bottom: 28px; }
+    .stat-card {
+      background: var(--card); border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow); border-left: 4px solid var(--primary);
+    }
+    .stat-card.green { border-color: var(--success); }
+    .stat-card.orange { border-color: var(--warning); }
+    .stat-card.red { border-color: var(--danger); }
+    .stat-card .label { font-size: 12px; color: var(--muted); font-weight: 700; margin-bottom: 6px; }
+    .stat-card .val { font-size: 32px; font-weight: 900; font-family: 'Space Mono', monospace; color: var(--text); }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--card); border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow); margin-bottom: 20px;
+    }
+    .card-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .card-head h3 { font-size: 16px; font-weight: 900; }
+
+    /* ── BUTTONS ── */
+    .btn {
+      padding: 9px 18px; border-radius: 8px; border: none; font-family: 'Nunito', sans-serif;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity .2s, transform .1s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:active { transform: scale(.97); }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-success { background: var(--success); color: white; }
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: white; }
+    .btn-outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-icon { background: none; border: none; cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: background .15s; }
+    .btn-icon:hover { background: var(--bg); }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { background: var(--bg); padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+    td { padding: 11px 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8faff; }
+    .badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700;
+    }
+    .badge-blue { background: var(--primary-pale); color: var(--primary); }
+    .badge-green { background: #dcfce7; color: #166534; }
+    .badge-red { background: #fee2e2; color: #991b1b; }
+
+    /* ── SEARCH ── */
+    .search-input {
+      padding: 9px 14px; border: 2px solid var(--border); border-radius: 8px;
+      font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; transition: border-color .2s; width: 220px;
+    }
+    .search-input:focus { border-color: var(--primary); }
+
+    /* ── MODAL ── */
+    .modal-bg {
+      position: fixed; inset: 0; background: rgba(15,23,42,.5); z-index: 200;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-bg.hidden { display: none; }
+    .modal {
+      background: white; border-radius: 20px; padding: 28px; width: 100%; max-width: 460px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.2); max-height: 90vh; overflow-y: auto;
+    }
+    .modal h3 { font-size: 18px; font-weight: 900; margin-bottom: 20px; color: var(--primary); }
+    .field { margin-bottom: 14px; }
+    .field label { display: block; font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 5px; text-transform: uppercase; letter-spacing: .5px; }
+    .field input, .field select, .field textarea {
+      width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 8px;
+      font-family: 'Nunito', sans-serif; font-size: 14px; outline: none; transition: border-color .2s;
+      background: #f8faff;
+    }
+    .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--primary); background: white; }
+    .field textarea { resize: vertical; min-height: 80px; }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+    .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* ── LEADERBOARD LIVE ── */
+    .lb-row {
+      display: flex; align-items: center; gap: 14px; padding: 12px 16px;
+      border-radius: 10px; border: 1px solid var(--border); margin-bottom: 8px;
+      transition: all .3s; background: white;
+    }
+    .lb-row.rank-1 { border-color: #d97706; background: #fffbeb; }
+    .lb-row.rank-2 { border-color: #94a3b8; background: #f8fafc; }
+    .lb-row.rank-3 { border-color: #92400e; background: #fff7ed; }
+    .lb-medal { font-size: 22px; width: 30px; text-align: center; }
+    .lb-av {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg,var(--primary),var(--accent));
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: 900; font-size: 15px; flex-shrink: 0;
+    }
+    .lb-info-wrap { flex: 1; }
+    .lb-nm { font-weight: 800; font-size: 14px; }
+    .lb-un { font-size: 12px; color: var(--muted); }
+    .lb-sc { font-family: 'Space Mono', monospace; font-weight: 700; color: var(--primary); font-size: 16px; }
+    .lb-qs { font-size: 11px; color: var(--muted); font-weight: 600; }
+    .live-indicator { display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; color: var(--success); }
+    .live-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 1.5s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
+
+    /* ── SOAL FORM ── */
+    .opt-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .opt-input-wrap { position: relative; }
+    .opt-input-wrap .opt-lbl {
+      position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+      font-weight: 900; font-size: 13px; color: var(--primary);
+    }
+    .opt-input-wrap input { padding-left: 32px; }
+
+    /* ── SOAL LIST ── */
+    .soal-item {
+      background: var(--bg); border-radius: 10px; padding: 14px 16px;
+      margin-bottom: 10px; border: 1px solid var(--border);
+    }
+    .soal-item .soal-q { font-weight: 800; font-size: 14px; margin-bottom: 8px; }
+    .soal-opts { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .soal-opt {
+      padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700;
+      background: white; border: 1px solid var(--border); color: var(--text);
+    }
+    .soal-opt.correct { background: #dcfce7; border-color: var(--success); color: #166534; }
+    .soal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; background: #1e293b; color: white;
+      padding: 12px 20px; border-radius: 10px; font-size: 14px; font-weight: 700;
+      box-shadow: 0 8px 24px rgba(0,0,0,.2); z-index: 999; transform: translateY(80px);
+      opacity: 0; transition: all .3s; pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { background: var(--success); }
+    #toast.error { background: var(--danger); }
+
+    /* ── EMPTY ── */
+    .empty { text-align: center; padding: 40px 20px; color: var(--muted); font-size: 14px; }
+    .empty .icon { font-size: 36px; margin-bottom: 8px; }
+
+    /* ── LOADING ── */
+    .loading { text-align: center; padding: 30px; color: var(--muted); font-size: 14px; }
+
+    /* ── CONFIRM DIALOG ── */
+    .confirm-box { background: white; border-radius: 16px; padding: 28px; width: 100%; max-width: 340px; box-shadow: 0 20px 60px rgba(0,0,0,.2); text-align: center; }
+    .confirm-box h4 { font-size: 18px; font-weight: 900; margin-bottom: 8px; }
+    .confirm-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .confirm-actions { display: flex; gap: 10px; justify-content: center; }
+
+    @media (max-width: 768px) {
+      aside { width: 60px; }
+      .nav-item span:not(.icon) { display: none; }
+      .sidebar-logo .name, .sidebar-logo .role { display: none; }
+      .btn-logout span { display: none; }
+      main { margin-left: 60px; padding: 16px; }
+      .field-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="logo">BinerIn</div>
+    <div class="logo-sub">Admin Dashboard</div>
+    <input type="text" id="adm-user" placeholder="Username admin" />
+    <input type="password" id="adm-pass" placeholder="Password" />
+    <p class="err" id="adm-err"></p>
+    <button class="btn-login" onclick="adminLogin()">Masuk</button>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="sidebar-logo">
+      <div class="name">BinerIn</div>
+      <div class="role">ADMIN PANEL</div>
+    </div>
+    <nav>
+      <button class="nav-item active" onclick="goPage('page-dashboard')" data-page="page-dashboard">
+        <span class="icon">📊</span><span>Dashboard</span>
+      </button>
+      <button class="nav-item" onclick="goPage('page-users')" data-page="page-users">
+        <span class="icon">👥</span><span>Kelola User</span>
+      </button>
+      <button class="nav-item" onclick="goPage('page-leaderboard')" data-page="page-leaderboard">
+        <span class="icon">🏅</span><span>Leaderboard</span>
+      </button>
+      <button class="nav-item" onclick="goPage('page-soal')" data-page="page-soal">
+        <span class="icon">❓</span><span>Kelola Soal</span>
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="btn-logout" onclick="adminLogout()">
+        <span>🚪</span><span>Logout</span>
+      </button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-sub">Selamat datang di panel admin BinerIn</div>
+      <div class="stat-grid" id="stat-grid">
+        <div class="stat-card"><div class="label">Total User</div><div class="val" id="stat-users">—</div></div>
+        <div class="stat-card green"><div class="label">Total Kuis Selesai</div><div class="val" id="stat-quizzes">—</div></div>
+        <div class="stat-card orange"><div class="label">Total Soal</div><div class="val" id="stat-soal">—</div></div>
+        <div class="stat-card red"><div class="label">Skor Tertinggi</div><div class="val" id="stat-topscore">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><h3>🏆 Top 5 Pemain</h3></div>
+        <div id="dash-top5"><div class="loading">⏳ Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="page" id="page-users">
+      <div class="page-title">Kelola User</div>
+      <div class="page-sub">CRUD data pengguna terdaftar</div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Daftar User</h3>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+            <input class="search-input" id="user-search" placeholder="🔍 Cari nama / username..." oninput="filterUsers()" />
+            <button class="btn btn-primary" onclick="openAddUser()">+ Tambah User</button>
+            <button class="btn btn-outline" onclick="loadUsers()">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Nama</th><th>Username</th><th>Best Score</th><th>Total Score</th><th>Kuis</th><th>Aksi</th></tr></thead>
+            <tbody id="user-tbody"><tr><td colspan="7"><div class="loading">⏳ Memuat...</div></td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="page" id="page-leaderboard">
+      <div class="page-title">Leaderboard Live</div>
+      <div class="page-sub">Auto-refresh setiap 10 detik</div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Papan Skor</h3>
+          <div style="display:flex;gap:12px;align-items:center">
+            <div class="live-indicator"><div class="live-dot"></div> LIVE</div>
+            <button class="btn btn-outline btn-sm" onclick="loadLeaderboard()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="lb-list"><div class="loading">⏳ Memuat...</div></div>
+      </div>
+    </div>
+
+    <!-- SOAL -->
+    <div class="page" id="page-soal">
+      <div class="page-title">Kelola Soal</div>
+      <div class="page-sub">Tambah, edit, atau hapus soal kuis</div>
+      <div class="card">
+        <div class="card-head">
+          <h3>Daftar Soal (<span id="soal-count">0</span>)</h3>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="openAddSoal()">+ Tambah Soal</button>
+            <button class="btn btn-outline" onclick="loadSoal()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="soal-list"><div class="loading">⏳ Memuat...</div></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ── MODAL USER ── -->
+<div class="modal-bg hidden" id="modal-user">
+  <div class="modal">
+    <h3 id="modal-user-title">Tambah User</h3>
+    <input type="hidden" id="edit-user-id" />
+    <div class="field"><label>Nama Lengkap</label><input id="u-name" placeholder="Nama lengkap" /></div>
+    <div class="field"><label>Username</label><input id="u-username" placeholder="username" /></div>
+    <div class="field"><label>Password</label><input type="password" id="u-password" placeholder="Password (kosongkan jika tidak diubah)" /></div>
+    <div class="field-row">
+      <div class="field"><label>Best Score</label><input type="number" id="u-best" placeholder="0" /></div>
+      <div class="field"><label>Total Score</label><input type="number" id="u-total" placeholder="0" /></div>
+      <div class="field"><label>Kuis Selesai</label><input type="number" id="u-quizzes" placeholder="0" /></div>
+    </div>
+    <p class="err" id="modal-user-err"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-user')">Batal</button>
+      <button class="btn btn-primary" id="modal-user-save-btn" onclick="saveUser()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL SOAL ── -->
+<div class="modal-bg hidden" id="modal-soal">
+  <div class="modal">
+    <h3 id="modal-soal-title">Tambah Soal</h3>
+    <input type="hidden" id="edit-soal-id" />
+    <div class="field"><label>Pertanyaan</label><textarea id="s-question" placeholder="Tulis pertanyaan di sini..."></textarea></div>
+    <div class="field">
+      <label>Pilihan Jawaban</label>
+      <div class="opt-inputs">
+        <div class="opt-input-wrap"><span class="opt-lbl">A</span><input id="s-opt0" placeholder="Opsi A" /></div>
+        <div class="opt-input-wrap"><span class="opt-lbl">B</span><input id="s-opt1" placeholder="Opsi B" /></div>
+        <div class="opt-input-wrap"><span class="opt-lbl">C</span><input id="s-opt2" placeholder="Opsi C" /></div>
+        <div class="opt-input-wrap"><span class="opt-lbl">D</span><input id="s-opt3" placeholder="Opsi D" /></div>
+      </div>
+    </div>
+    <div class="field">
+      <label>Jawaban Benar</label>
+      <select id="s-ans">
+        <option value="0">A</option>
+        <option value="1">B</option>
+        <option value="2">C</option>
+        <option value="3">D</option>
+      </select>
+    </div>
+    <p class="err" id="modal-soal-err"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-soal')">Batal</button>
+      <button class="btn btn-primary" onclick="saveSoal()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── CONFIRM ── -->
+<div class="modal-bg hidden" id="modal-confirm">
+  <div class="confirm-box">
+    <h4 id="confirm-title">Hapus data?</h4>
+    <p id="confirm-msg">Tindakan ini tidak bisa dibatalkan.</p>
+    <div class="confirm-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-confirm')">Batal</button>
+      <button class="btn btn-danger" id="confirm-ok-btn">Hapus</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast"></div>
+
+<script>
+/* ── CONFIG ── */
+const SUPABASE_URL = 'https://unaqmhhafomxbmqwnohq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVuYXFtaGhhZm9teGJtcXdub2hxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA0NzM4MDAsImV4cCI6MjA5NjA0OTgwMH0.mikkR-jo27dvlC9FzswknT9s2cATL8Gbwa4f3D9rvmA';
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'admin123';
+
+/* ── SUPABASE ── */
+const h = () => ({ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' });
+
+async function sbGet(table, q = '') {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`, { headers: h() });
+  return r.json();
+}
+async function sbPost(table, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST', headers: { ...h(), Prefer: 'return=representation' }, body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function sbPatch(table, filter, body) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+    method: 'PATCH', headers: { ...h(), Prefer: 'return=representation' }, body: JSON.stringify(body)
+  });
+  return r.json();
+}
+async function sbDelete(table, filter) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${filter}`, {
+    method: 'DELETE', headers: h()
+  });
+  return r.ok;
+}
+
+/* ── AUTH ── */
+function adminLogin() {
+  const u = document.getElementById('adm-user').value.trim();
+  const p = document.getElementById('adm-pass').value;
+  const err = document.getElementById('adm-err');
+  if (u === ADMIN_USER && p === ADMIN_PASS) {
+    sessionStorage.setItem('admin_auth', '1');
+    document.getElementById('login-overlay').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initDashboard();
+  } else {
+    err.textContent = 'Username atau password salah.';
+  }
+}
+function adminLogout() {
+  sessionStorage.removeItem('admin_auth');
+  location.reload();
+}
+document.getElementById('adm-pass').addEventListener('keydown', e => { if (e.key === 'Enter') adminLogin(); });
+
+/* ── NAV ── */
+function goPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.querySelector(`[data-page="${id}"]`).classList.add('active');
+  if (id === 'page-users') loadUsers();
+  if (id === 'page-leaderboard') loadLeaderboard();
+  if (id === 'page-soal') loadSoal();
+}
+
+/* ── TOAST ── */
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `show ${type}`;
+  setTimeout(() => { t.className = ''; }, 3000);
+}
+
+/* ── MODAL ── */
+function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+function openModal(id) { document.getElementById(id).classList.remove('hidden'); }
+
+/* ── CONFIRM ── */
+function confirm(title, msg, onOk) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.onclick = () => { closeModal('modal-confirm'); onOk(); };
+  openModal('modal-confirm');
+}
+
+/* ── DASHBOARD ── */
+async function initDashboard() {
+  try {
+    const users = await sbGet('users', 'select=total_score,quizzes');
+    document.getElementById('stat-users').textContent = users.length;
+    const totalQ = users.reduce((s, u) => s + (u.quizzes || 0), 0);
+    document.getElementById('stat-quizzes').textContent = totalQ;
+    const topScore = users.reduce((m, u) => Math.max(m, u.total_score || 0), 0);
+    document.getElementById('stat-topscore').textContent = topScore;
+
+    // soal count — jika ada tabel questions di supabase, pakai itu; jika tidak pakai hardcoded
+    try {
+      const soals = await sbGet('questions', 'select=id');
+      document.getElementById('stat-soal').textContent = soals.length;
+    } catch { document.getElementById('stat-soal').textContent = '10'; }
+
+    // top 5
+    const top = await sbGet('users', 'select=name,username,total_score,quizzes&order=total_score.desc&limit=5');
+    const medals = ['🥇','🥈','🥉','4️⃣','5️⃣'];
+    document.getElementById('dash-top5').innerHTML = top.map((u, i) => `
+      <div class="lb-row rank-${i+1}">
+        <div class="lb-medal">${medals[i]}</div>
+        <div class="lb-av">${u.name.charAt(0).toUpperCase()}</div>
+        <div class="lb-info-wrap">
+          <div class="lb-nm">${u.name}</div>
+          <div class="lb-un">@${u.username} · ${u.quizzes||0} kuis</div>
+        </div>
+        <div class="lb-sc">${u.total_score||0} pts</div>
+      </div>`).join('') || '<div class="empty"><div class="icon">👻</div>Belum ada data</div>';
+  } catch (e) { toast('Gagal memuat dashboard', 'error'); }
+}
+
+/* ── USERS ── */
+let allUsers = [];
+async function loadUsers() {
+  document.getElementById('user-tbody').innerHTML = '<tr><td colspan="7"><div class="loading">⏳ Memuat...</div></td></tr>';
+  try {
+    allUsers = await sbGet('users', 'select=*&order=total_score.desc');
+    renderUserTable(allUsers);
+  } catch { toast('Gagal memuat user', 'error'); }
+}
+function renderUserTable(users) {
+  if (!users.length) {
+    document.getElementById('user-tbody').innerHTML = '<tr><td colspan="7"><div class="empty"><div class="icon">👤</div>Belum ada user</div></td></tr>';
+    return;
+  }
+  document.getElementById('user-tbody').innerHTML = users.map((u, i) => `
+    <tr>
+      <td><span class="badge badge-blue">#${i+1}</span></td>
+      <td><b>${u.name}</b></td>
+      <td style="color:var(--muted);font-family:'Space Mono',monospace;font-size:13px">@${u.username}</td>
+      <td><span class="badge badge-green">${u.best_score||0}</span></td>
+      <td><b style="color:var(--primary)">${u.total_score||0}</b></td>
+      <td>${u.quizzes||0}</td>
+      <td>
+        <button class="btn-icon" onclick="openEditUser(${JSON.stringify(u).replace(/"/g,'&quot;')})" title="Edit">✏️</button>
+        <button class="btn-icon" onclick="deleteUser('${u.username}','${u.name}')" title="Hapus">🗑️</button>
+      </td>
+    </tr>`).join('');
+}
+function filterUsers() {
+  const q = document.getElementById('user-search').value.toLowerCase();
+  renderUserTable(allUsers.filter(u => u.name.toLowerCase().includes(q) || u.username.toLowerCase().includes(q)));
+}
+function openAddUser() {
+  document.getElementById('modal-user-title').textContent = 'Tambah User';
+  document.getElementById('edit-user-id').value = '';
+  ['u-name','u-username','u-password'].forEach(id => document.getElementById(id).value = '');
+  ['u-best','u-total','u-quizzes'].forEach(id => document.getElementById(id).value = 0);
+  document.getElementById('modal-user-err').textContent = '';
+  document.getElementById('u-password').placeholder = 'Password';
+  openModal('modal-user');
+}
+function openEditUser(u) {
+  document.getElementById('modal-user-title').textContent = 'Edit User';
+  document.getElementById('edit-user-id').value = u.username;
+  document.getElementById('u-name').value = u.name;
+  document.getElementById('u-username').value = u.username;
+  document.getElementById('u-password').value = '';
+  document.getElementById('u-password').placeholder = 'Kosongkan jika tidak diubah';
+  document.getElementById('u-best').value = u.best_score || 0;
+  document.getElementById('u-total').value = u.total_score || 0;
+  document.getElementById('u-quizzes').value = u.quizzes || 0;
+  document.getElementById('modal-user-err').textContent = '';
+  openModal('modal-user');
+}
+async function saveUser() {
+  const isEdit = !!document.getElementById('edit-user-id').value;
+  const name = document.getElementById('u-name').value.trim();
+  const username = document.getElementById('u-username').value.trim();
+  const password = document.getElementById('u-password').value;
+  const best_score = parseInt(document.getElementById('u-best').value) || 0;
+  const total_score = parseInt(document.getElementById('u-total').value) || 0;
+  const quizzes = parseInt(document.getElementById('u-quizzes').value) || 0;
+  const err = document.getElementById('modal-user-err');
+  err.textContent = '';
+  if (!name || !username) { err.textContent = 'Nama dan username wajib diisi.'; return; }
+  if (!isEdit && !password) { err.textContent = 'Password wajib untuk user baru.'; return; }
+
+  const btn = document.getElementById('modal-user-save-btn');
+  btn.textContent = 'Menyimpan...'; btn.disabled = true;
+  try {
+    if (isEdit) {
+      const body = { name, username, best_score, total_score, quizzes };
+      if (password) body.password = password;
+      await sbPatch('users', `username=eq.${document.getElementById('edit-user-id').value}`, body);
+      toast('✅ User berhasil diperbarui');
+    } else {
+      const existing = await sbGet('users', `username=eq.${username}`);
+      if (existing.length) { err.textContent = 'Username sudah digunakan.'; btn.textContent = 'Simpan'; btn.disabled = false; return; }
+      await sbPost('users', { name, username, password, best_score, total_score, quizzes });
+      toast('✅ User berhasil ditambahkan');
+    }
+    closeModal('modal-user');
+    loadUsers();
+  } catch { toast('Gagal menyimpan user', 'error'); }
+  btn.textContent = 'Simpan'; btn.disabled = false;
+}
+function deleteUser(username, name) {
+  confirm('Hapus User?', `Yakin hapus "${name}" (@${username})?`, async () => {
+    try {
+      await sbDelete('users', `username=eq.${username}`);
+      toast('🗑️ User dihapus');
+      loadUsers();
+    } catch { toast('Gagal menghapus user', 'error'); }
+  });
+}
+
+/* ── LEADERBOARD LIVE ── */
+let lbInterval = null;
+async function loadLeaderboard() {
+  try {
+    const users = await sbGet('users', 'select=name,username,total_score,quizzes&order=total_score.desc&limit=50');
+    const medals = ['🥇','🥈','🥉'];
+    document.getElementById('lb-list').innerHTML = users.length
+      ? users.map((u, i) => `
+        <div class="lb-row rank-${i+1}">
+          <div class="lb-medal">${medals[i] || `#${i+1}`}</div>
+          <div class="lb-av">${u.name.charAt(0).toUpperCase()}</div>
+          <div class="lb-info-wrap">
+            <div class="lb-nm">${u.name}</div>
+            <div class="lb-un">@${u.username}</div>
+          </div>
+          <div style="text-align:right">
+            <div class="lb-sc">${u.total_score||0} pts</div>
+            <div class="lb-qs">${u.quizzes||0} kuis</div>
+          </div>
+        </div>`).join('')
+      : '<div class="empty"><div class="icon">🏅</div>Belum ada skor</div>';
+  } catch { toast('Gagal memuat leaderboard', 'error'); }
+}
+// auto-refresh leaderboard saat halaman aktif
+const _origGoPage = goPage;
+function goPage(id) {
+  clearInterval(lbInterval);
+  _origGoPage(id);
+  if (id === 'page-leaderboard') {
+    lbInterval = setInterval(loadLeaderboard, 10000);
+  }
+}
+
+/* ── SOAL ── */
+// Soal disimpan di localStorage agar bisa CRUD tanpa tabel Supabase tambahan
+// Jika kamu punya tabel `questions` di Supabase, ganti fungsi ini dengan sbGet/sbPost/sbPatch/sbDelete
+
+const SOAL_KEY = 'binerin_soal';
+function getSoalFromStorage() {
+  const raw = localStorage.getItem(SOAL_KEY);
+  if (raw) return JSON.parse(raw);
+  // Default soal dari app.js
+  return [
+    { id: 1, q: 'Angka yang digunakan dalam sistem bilangan biner adalah ....', opts: ['0 dan 1','0 sampai 7','0 sampai 9','0 sampai F'], ans: 0 },
+    { id: 2, q: 'Nilai tempat pada bilangan biner dihitung berdasarkan pangkat dari ....', opts: ['5','8','10','2'], ans: 3 },
+    { id: 3, q: 'Hasil konversi bilangan biner 10001 ke desimal adalah ....', opts: ['15','16','17','18'], ans: 2 },
+    { id: 4, q: 'Bilangan desimal 10 jika dikonversi ke biner menjadi ....', opts: ['1001','1010','1100','1110'], ans: 1 },
+    { id: 5, q: 'Bilangan desimal 15 dalam bentuk biner adalah ....', opts: ['1110','1111','1011','1101'], ans: 1 },
+    { id: 6, q: 'Bilangan Biner 1100 jika dikonversi ke desimal menjadi ....', opts: ['10','11','12','13'], ans: 2 },
+    { id: 7, q: 'Bilangan Biner 1011 jika dikonversi ke desimal menjadi ....', opts: ['9','10','11','12'], ans: 2 },
+    { id: 8, q: 'Contoh penerapan bilangan biner dalam kehidupan sehari-hari terdapat pada ....', opts: ['Komputer & Smartphone','Buku tulis','Penggaris','Pensil'], ans: 0 },
+    { id: 9, q: 'Bilangan desimal 13 dalam bentuk biner adalah ....', opts: ['1100','1110','1101','1011'], ans: 2 },
+    { id: 10, q: 'Bilangan biner 1010 jika dikonversi ke desimal menjadi ....', opts: ['8','9','10','11'], ans: 2 },
+  ];
+}
+function saveSoalToStorage(arr) { localStorage.setItem(SOAL_KEY, JSON.stringify(arr)); }
+
+function loadSoal() {
+  const soals = getSoalFromStorage();
+  document.getElementById('soal-count').textContent = soals.length;
+  document.getElementById('stat-soal').textContent = soals.length;
+  const LABELS = ['A','B','C','D'];
+  document.getElementById('soal-list').innerHTML = soals.length
+    ? soals.map((s, i) => `
+      <div class="soal-item">
+        <div class="soal-q">${i+1}. ${s.q}</div>
+        <div class="soal-opts">
+          ${s.opts.map((o, j) => `<span class="soal-opt ${j === s.ans ? 'correct' : ''}">${LABELS[j]}. ${o}</span>`).join('')}
+        </div>
+        <div class="soal-actions">
+          <button class="btn btn-warning btn-sm" onclick="openEditSoal(${s.id})">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSoal(${s.id},'${s.q.substring(0,30)}...')">🗑️ Hapus</button>
+        </div>
+      </div>`).join('')
+    : '<div class="empty"><div class="icon">❓</div>Belum ada soal</div>';
+}
+
+function openAddSoal() {
+  document.getElementById('modal-soal-title').textContent = 'Tambah Soal';
+  document.getElementById('edit-soal-id').value = '';
+  document.getElementById('s-question').value = '';
+  [0,1,2,3].forEach(i => document.getElementById(`s-opt${i}`).value = '');
+  document.getElementById('s-ans').value = '0';
+  document.getElementById('modal-soal-err').textContent = '';
+  openModal('modal-soal');
+}
+
+function openEditSoal(id) {
+  const soals = getSoalFromStorage();
+  const s = soals.find(x => x.id === id);
+  if (!s) return;
+  document.getElementById('modal-soal-title').textContent = 'Edit Soal';
+  document.getElementById('edit-soal-id').value = id;
+  document.getElementById('s-question').value = s.q;
+  [0,1,2,3].forEach(i => document.getElementById(`s-opt${i}`).value = s.opts[i] || '');
+  document.getElementById('s-ans').value = s.ans;
+  document.getElementById('modal-soal-err').textContent = '';
+  openModal('modal-soal');
+}
+
+function saveSoal() {
+  const id = document.getElementById('edit-soal-id').value;
+  const q = document.getElementById('s-question').value.trim();
+  const opts = [0,1,2,3].map(i => document.getElementById(`s-opt${i}`).value.trim());
+  const ans = parseInt(document.getElementById('s-ans').value);
+  const err = document.getElementById('modal-soal-err');
+  err.textContent = '';
+  if (!q) { err.textContent = 'Pertanyaan wajib diisi.'; return; }
+  if (opts.some(o => !o)) { err.textContent = 'Semua opsi jawaban wajib diisi.'; return; }
+
+  let soals = getSoalFromStorage();
+  if (id) {
+    soals = soals.map(s => s.id === parseInt(id) ? { ...s, q, opts, ans } : s);
+    toast('✅ Soal berhasil diperbarui');
+  } else {
+    const newId = soals.length ? Math.max(...soals.map(s => s.id)) + 1 : 1;
+    soals.push({ id: newId, q, opts, ans });
+    toast('✅ Soal berhasil ditambahkan');
+  }
+  saveSoalToStorage(soals);
+  closeModal('modal-soal');
+  loadSoal();
+}
+
+function deleteSoal(id, preview) {
+  confirm('Hapus Soal?', `Hapus soal "${preview}"?`, () => {
+    let soals = getSoalFromStorage();
+    soals = soals.filter(s => s.id !== id);
+    saveSoalToStorage(soals);
+    toast('🗑️ Soal dihapus');
+    loadSoal();
+  });
+}
+
+/* ── INIT ── */
+if (sessionStorage.getItem('admin_auth') === '1') {
+  document.getElementById('login-overlay').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initDashboard();
+}
+</script>
+</body>
+</html>
