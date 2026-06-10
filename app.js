@@ -361,6 +361,7 @@ function renderQuestion() {
     btn.className = 'opt-btn';
     btn.innerHTML = `<span class="opt-label">${LABELS[i]}.</span> ${opt}`;
     btn.onclick = () => selectAnswer(i);
+    btn.textContent = opt;
     optsCont.appendChild(btn);
   });
 }
