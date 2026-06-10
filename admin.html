@@ -201,6 +201,48 @@
     .live-dot { width: 8px; height: 8px; background: var(--success); border-radius: 50%; animation: pulse 1.5s infinite; }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(1.4)} }
 
+    /* ── CATEGORY GRID ── */
+    .cat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 18px;
+    }
+    .cat-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      padding: 22px 20px 18px;
+      box-shadow: var(--shadow);
+      border: 2px solid var(--border);
+      cursor: pointer;
+      transition: all .2s;
+      position: relative;
+      overflow: hidden;
+    }
+    .cat-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+    .cat-card:hover { border-color: var(--primary); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(37,99,235,.15); }
+    .cat-card .cat-icon { font-size: 32px; margin-bottom: 10px; }
+    .cat-card .cat-name { font-size: 16px; font-weight: 900; color: var(--text); margin-bottom: 4px; }
+    .cat-card .cat-desc { font-size: 12px; color: var(--muted); margin-bottom: 12px; min-height: 16px; }
+    .cat-card .cat-badge { display: inline-block; background: var(--primary-pale); color: var(--primary); font-size: 11px; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
+    .cat-card-actions { display: flex; gap: 6px; margin-top: 14px; }
+    .cat-add-card {
+      background: transparent;
+      border: 2.5px dashed var(--border);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 8px; cursor: pointer; transition: all .2s; color: var(--muted);
+      font-weight: 700; font-size: 14px; min-height: 160px;
+    }
+    .cat-add-card:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-pale); }
+    .cat-add-icon { font-size: 28px; }
+
     /* ── SOAL FORM ── */
     .opt-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .opt-input-wrap { position: relative; }
@@ -358,13 +400,28 @@
     <!-- SOAL -->
     <div class="page" id="page-soal">
       <div class="page-title">Kelola Soal</div>
-      <div class="page-sub">Tambah, edit, atau hapus soal kuis</div>
-      <div class="card">
-        <div class="card-head">
-          <h3>Daftar Soal (<span id="soal-count">0</span>)</h3>
+      <div class="page-sub">Tambah, edit, atau hapus soal per kategori tugas</div>
+      <!-- CATEGORY GRID VIEW -->
+      <div id="soal-category-view">
+        <div class="card-head" style="margin-bottom:16px">
+          <h3 style="font-size:15px;font-weight:900;">Kategori Soal (<span id="cat-count">0</span> tugas · <span id="soal-count">0</span> soal)</h3>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-primary" onclick="openAddCategory()">+ Tambah Tugas</button>
+            <button class="btn btn-outline" onclick="loadSoal()">↻ Refresh</button>
+          </div>
+        </div>
+        <div id="category-grid" class="cat-grid"><div class="loading">⏳ Memuat...</div></div>
+      </div>
+      <!-- SOAL DETAIL VIEW (inside a category) -->
+      <div id="soal-detail-view" style="display:none">
+        <div class="card-head" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <button class="btn btn-outline btn-sm" onclick="backToCategories()">← Kembali</button>
+            <h3 style="font-size:16px;font-weight:900;" id="detail-cat-title">Tugas 1</h3>
+          </div>
           <div style="display:flex;gap:10px">
             <button class="btn btn-primary" onclick="openAddSoal()">+ Tambah Soal</button>
-            <button class="btn btn-outline" onclick="loadSoal()">↻ Refresh</button>
+            <button class="btn btn-outline" onclick="loadCategoryDetail(currentCatId)">↻ Refresh</button>
           </div>
         </div>
         <div id="soal-list"><div class="loading">⏳ Memuat...</div></div>
@@ -399,6 +456,7 @@
   <div class="modal">
     <h3 id="modal-soal-title">Tambah Soal</h3>
     <input type="hidden" id="edit-soal-id" />
+    <input type="hidden" id="edit-soal-cat" />
     <div class="field"><label>Pertanyaan</label><textarea id="s-question" placeholder="Tulis pertanyaan di sini..."></textarea></div>
     <div class="field">
       <label>Pilihan Jawaban</label>
@@ -422,6 +480,21 @@
     <div class="modal-actions">
       <button class="btn btn-outline" onclick="closeModal('modal-soal')">Batal</button>
       <button class="btn btn-primary" onclick="saveSoal()">Simpan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL CATEGORY ── -->
+<div class="modal-bg hidden" id="modal-category">
+  <div class="modal" style="max-width:380px">
+    <h3 id="modal-cat-title">Tambah Kategori</h3>
+    <input type="hidden" id="edit-cat-id" />
+    <div class="field"><label>Nama Tugas</label><input id="cat-name" placeholder="Contoh: Tugas 1" /></div>
+    <div class="field"><label>Deskripsi (opsional)</label><input id="cat-desc" placeholder="Contoh: Soal konversi bilangan biner" /></div>
+    <p class="err" id="modal-cat-err"></p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal('modal-category')">Batal</button>
+      <button class="btn btn-primary" onclick="saveCategory()">Simpan</button>
     </div>
   </div>
 </div>
@@ -772,40 +845,168 @@ async function loadLeaderboard() {
       : '<div class="empty"><div class="icon">🏅</div>Belum ada skor</div>';
   } catch { toast('Gagal memuat leaderboard', 'error'); }
 }
-/* ── SOAL (Supabase) ── */
+/* ── SOAL (Category-based) ── */
 let cachedSoal = [];
+let cachedCategories = [];
+let currentCatId = null;
+const LS_CATEGORIES = 'biner_categories';
+
+function lsGetCategories() {
+  try { return JSON.parse(localStorage.getItem(LS_CATEGORIES)) || []; } catch { return []; }
+}
+function lsSetCategories(data) {
+  localStorage.setItem(LS_CATEGORIES, JSON.stringify(data));
+}
+function getCategories() {
+  // Always use localStorage for categories
+  return lsGetCategories();
+}
 
 async function loadSoal() {
-  document.getElementById('soal-list').innerHTML = '<div class="loading">⏳ Memuat...</div>';
+  document.getElementById('category-grid').innerHTML = '<div class="loading">⏳ Memuat...</div>';
   try {
     const rows = await sbGet('questions', 'select=*&order=id.asc');
     cachedSoal = rows;
-    document.getElementById('soal-count').textContent = rows.length;
-    document.getElementById('stat-soal').textContent = rows.length;
-    const LABELS = ['A','B','C','D'];
-    document.getElementById('soal-list').innerHTML = rows.length
-      ? rows.map((s, i) => {
-          const opts = [s.opt_a, s.opt_b, s.opt_c, s.opt_d];
-          const preview = s.q.length > 40 ? s.q.substring(0,40)+'...' : s.q;
-          return `
-            <div class="soal-item">
-              <div class="soal-q">${i+1}. ${s.q}</div>
-              <div class="soal-opts">
-                ${opts.map((o, j) => `<span class="soal-opt ${j === s.ans ? 'correct' : ''}">${LABELS[j]}. ${o}</span>`).join('')}
-              </div>
-              <div class="soal-actions">
-                <button class="btn btn-warning btn-sm" onclick="openEditSoal(${s.id})">✏️ Edit</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteSoal(${s.id}, \`${preview.replace(/`/g,"'")}\`)">🗑️ Hapus</button>
-              </div>
-            </div>`;
-        }).join('')
-      : '<div class="empty"><div class="icon">❓</div>Belum ada soal</div>';
+    let cats = getCategories();
+    // If no categories yet, auto-create from existing soal (legacy migration)
+    if (cats.length === 0 && rows.length > 0) {
+      cats = [{ id: 'cat_1', name: 'Tugas 1', desc: 'Soal kuis biner', icon: '📘', soalIds: rows.map(r => r.id) }];
+      lsSetCategories(cats);
+    }
+    cachedCategories = cats;
+    const totalSoal = rows.length;
+    document.getElementById('soal-count').textContent = totalSoal;
+    document.getElementById('stat-soal').textContent = totalSoal;
+    document.getElementById('cat-count').textContent = cats.length;
+    renderCategoryGrid(cats, rows);
   } catch (e) { toast('Gagal memuat soal', 'error'); }
+}
+
+function renderCategoryGrid(cats, rows) {
+  const icons = ['📘','📗','📙','📕','📓','📔','📒'];
+  const colors = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899'];
+  const grid = document.getElementById('category-grid');
+  if (!cats.length) {
+    grid.innerHTML = `<div class="cat-add-card" onclick="openAddCategory()">
+      <div class="cat-add-icon">➕</div><div>Tambah Tugas Pertama</div>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = cats.map((cat, idx) => {
+    const soalCount = (cat.soalIds || []).length;
+    const icon = cat.icon || icons[idx % icons.length];
+    return `
+      <div class="cat-card" onclick="openCategoryDetail('${cat.id}')">
+        <div class="cat-icon">${icon}</div>
+        <div class="cat-name">${cat.name}</div>
+        <div class="cat-desc">${cat.desc || ''}</div>
+        <span class="cat-badge">${soalCount} soal</span>
+        <div class="cat-card-actions" onclick="event.stopPropagation()">
+          <button class="btn btn-warning btn-sm" onclick="openEditCategory('${cat.id}')">✏️ Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteCategory('${cat.id}', '${cat.name.replace(/'/g,"\\'")}')">🗑️ Hapus</button>
+        </div>
+      </div>`;
+  }).join('') + `<div class="cat-add-card" onclick="openAddCategory()">
+    <div class="cat-add-icon">➕</div><div>Tambah Tugas Baru</div>
+  </div>`;
+}
+
+function openCategoryDetail(catId) {
+  currentCatId = catId;
+  const cat = cachedCategories.find(c => c.id === catId);
+  document.getElementById('detail-cat-title').textContent = cat ? cat.name : 'Soal';
+  document.getElementById('soal-category-view').style.display = 'none';
+  document.getElementById('soal-detail-view').style.display = 'block';
+  loadCategoryDetail(catId);
+}
+
+function backToCategories() {
+  currentCatId = null;
+  document.getElementById('soal-detail-view').style.display = 'none';
+  document.getElementById('soal-category-view').style.display = 'block';
+  loadSoal();
+}
+
+function loadCategoryDetail(catId) {
+  const cat = cachedCategories.find(c => c.id === catId);
+  if (!cat) return;
+  const soalIds = cat.soalIds || [];
+  const soal = cachedSoal.filter(s => soalIds.includes(s.id));
+  const LABELS = ['A','B','C','D'];
+  document.getElementById('soal-list').innerHTML = soal.length
+    ? soal.map((s, i) => {
+        const opts = [s.opt_a, s.opt_b, s.opt_c, s.opt_d];
+        const preview = s.q.length > 40 ? s.q.substring(0,40)+'...' : s.q;
+        return `
+          <div class="soal-item">
+            <div class="soal-q">${i+1}. ${s.q}</div>
+            <div class="soal-opts">
+              ${opts.map((o, j) => `<span class="soal-opt ${j === s.ans ? 'correct' : ''}">${LABELS[j]}. ${o}</span>`).join('')}
+            </div>
+            <div class="soal-actions">
+              <button class="btn btn-warning btn-sm" onclick="openEditSoal(${s.id})">✏️ Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="deleteSoal(${s.id}, \`${preview.replace(/`/g,"'")}\`)">🗑️ Hapus</button>
+            </div>
+          </div>`;
+      }).join('')
+    : '<div class="empty"><div class="icon">❓</div>Belum ada soal di tugas ini<br><small style="font-size:12px;margin-top:8px;display:block">Klik "+ Tambah Soal" untuk mulai menambahkan</small></div>';
+}
+
+/* ── CATEGORY CRUD ── */
+function openAddCategory() {
+  document.getElementById('modal-cat-title').textContent = 'Tambah Tugas Baru';
+  document.getElementById('edit-cat-id').value = '';
+  document.getElementById('cat-name').value = '';
+  document.getElementById('cat-desc').value = '';
+  document.getElementById('modal-cat-err').textContent = '';
+  openModal('modal-category');
+}
+function openEditCategory(catId) {
+  const cat = cachedCategories.find(c => c.id === catId);
+  if (!cat) return;
+  document.getElementById('modal-cat-title').textContent = 'Edit Tugas';
+  document.getElementById('edit-cat-id').value = catId;
+  document.getElementById('cat-name').value = cat.name;
+  document.getElementById('cat-desc').value = cat.desc || '';
+  document.getElementById('modal-cat-err').textContent = '';
+  openModal('modal-category');
+}
+function saveCategory() {
+  const id = document.getElementById('edit-cat-id').value;
+  const name = document.getElementById('cat-name').value.trim();
+  const desc = document.getElementById('cat-desc').value.trim();
+  const err = document.getElementById('modal-cat-err');
+  if (!name) { err.textContent = 'Nama tugas wajib diisi.'; return; }
+  let cats = getCategories();
+  if (id) {
+    cats = cats.map(c => c.id === id ? { ...c, name, desc } : c);
+    toast('✅ Tugas berhasil diperbarui');
+  } else {
+    const newId = 'cat_' + Date.now();
+    const icons = ['📘','📗','📙','📕','📓','📔','📒'];
+    cats.push({ id: newId, name, desc, icon: icons[cats.length % icons.length], soalIds: [] });
+    toast('✅ Tugas berhasil ditambahkan');
+  }
+  lsSetCategories(cats);
+  cachedCategories = cats;
+  closeModal('modal-category');
+  loadSoal();
+}
+function deleteCategory(catId, catName) {
+  showConfirm('Hapus Tugas?', `Hapus tugas "${catName}"? Soal-soalnya tidak ikut terhapus dari database.`, async () => {
+    let cats = getCategories();
+    cats = cats.filter(c => c.id !== catId);
+    lsSetCategories(cats);
+    cachedCategories = cats;
+    toast('🗑️ Tugas dihapus');
+    loadSoal();
+  });
 }
 
 function openAddSoal() {
   document.getElementById('modal-soal-title').textContent = 'Tambah Soal';
   document.getElementById('edit-soal-id').value = '';
+  document.getElementById('edit-soal-cat').value = currentCatId || '';
   document.getElementById('s-question').value = '';
   [0,1,2,3].forEach(i => document.getElementById(`s-opt${i}`).value = '');
   document.getElementById('s-ans').value = '0';
@@ -818,6 +1019,7 @@ function openEditSoal(id) {
   if (!s) return;
   document.getElementById('modal-soal-title').textContent = 'Edit Soal';
   document.getElementById('edit-soal-id').value = id;
+  document.getElementById('edit-soal-cat').value = currentCatId || '';
   document.getElementById('s-question').value = s.q;
   document.getElementById('s-opt0').value = s.opt_a;
   document.getElementById('s-opt1').value = s.opt_b;
@@ -830,6 +1032,7 @@ function openEditSoal(id) {
 
 async function saveSoal() {
   const id = document.getElementById('edit-soal-id').value;
+  const catId = document.getElementById('edit-soal-cat').value;
   const q = document.getElementById('s-question').value.trim();
   const opt_a = document.getElementById('s-opt0').value.trim();
   const opt_b = document.getElementById('s-opt1').value.trim();
@@ -844,15 +1047,27 @@ async function saveSoal() {
   const saveBtn = document.querySelector('#modal-soal .btn-primary');
   saveBtn.textContent = 'Menyimpan...'; saveBtn.disabled = true;
   try {
+    let savedId = id ? parseInt(id) : null;
     if (id) {
       await sbPatch('questions', `id=eq.${id}`, { q, opt_a, opt_b, opt_c, opt_d, ans });
       toast('✅ Soal berhasil diperbarui');
     } else {
-      await sbPost('questions', { q, opt_a, opt_b, opt_c, opt_d, ans });
+      const result = await sbPost('questions', { q, opt_a, opt_b, opt_c, opt_d, ans });
+      savedId = result[0]?.id;
+      // Add to category's soalIds
+      if (catId && savedId) {
+        let cats = getCategories();
+        cats = cats.map(c => c.id === catId ? { ...c, soalIds: [...(c.soalIds||[]), savedId] } : c);
+        lsSetCategories(cats);
+        cachedCategories = cats;
+      }
       toast('✅ Soal berhasil ditambahkan');
     }
     closeModal('modal-soal');
-    loadSoal();
+    // Refresh cachedSoal then re-render
+    const rows = await sbGet('questions', 'select=*&order=id.asc');
+    cachedSoal = rows;
+    if (catId) loadCategoryDetail(catId);
   } catch (e) { toast('Gagal menyimpan soal', 'error'); }
   saveBtn.textContent = 'Simpan'; saveBtn.disabled = false;
 }
@@ -861,8 +1076,15 @@ function deleteSoal(id, preview) {
   showConfirm('Hapus Soal?', `Hapus soal "${preview}"?`, async () => {
     try {
       await sbDelete('questions', `id=eq.${id}`);
+      // Remove from all categories
+      let cats = getCategories();
+      cats = cats.map(c => ({ ...c, soalIds: (c.soalIds||[]).filter(sid => sid !== id) }));
+      lsSetCategories(cats);
+      cachedCategories = cats;
       toast('🗑️ Soal dihapus');
-      loadSoal();
+      const rows = await sbGet('questions', 'select=*&order=id.asc');
+      cachedSoal = rows;
+      if (currentCatId) loadCategoryDetail(currentCatId);
     } catch { toast('Gagal menghapus soal', 'error'); }
   });
 }
