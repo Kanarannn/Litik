@@ -687,48 +687,35 @@ function goPage(id) {
   }
 }
 
-/* ── SOAL ── */
-// Soal disimpan di localStorage agar bisa CRUD tanpa tabel Supabase tambahan
-// Jika kamu punya tabel `questions` di Supabase, ganti fungsi ini dengan sbGet/sbPost/sbPatch/sbDelete
+/* ── SOAL (Supabase) ── */
+let cachedSoal = [];
 
-const SOAL_KEY = 'binerin_soal';
-function getSoalFromStorage() {
-  const raw = localStorage.getItem(SOAL_KEY);
-  if (raw) return JSON.parse(raw);
-  // Default soal dari app.js
-  return [
-    { id: 1, q: 'Angka yang digunakan dalam sistem bilangan biner adalah ....', opts: ['0 dan 1','0 sampai 7','0 sampai 9','0 sampai F'], ans: 0 },
-    { id: 2, q: 'Nilai tempat pada bilangan biner dihitung berdasarkan pangkat dari ....', opts: ['5','8','10','2'], ans: 3 },
-    { id: 3, q: 'Hasil konversi bilangan biner 10001 ke desimal adalah ....', opts: ['15','16','17','18'], ans: 2 },
-    { id: 4, q: 'Bilangan desimal 10 jika dikonversi ke biner menjadi ....', opts: ['1001','1010','1100','1110'], ans: 1 },
-    { id: 5, q: 'Bilangan desimal 15 dalam bentuk biner adalah ....', opts: ['1110','1111','1011','1101'], ans: 1 },
-    { id: 6, q: 'Bilangan Biner 1100 jika dikonversi ke desimal menjadi ....', opts: ['10','11','12','13'], ans: 2 },
-    { id: 7, q: 'Bilangan Biner 1011 jika dikonversi ke desimal menjadi ....', opts: ['9','10','11','12'], ans: 2 },
-    { id: 8, q: 'Contoh penerapan bilangan biner dalam kehidupan sehari-hari terdapat pada ....', opts: ['Komputer & Smartphone','Buku tulis','Penggaris','Pensil'], ans: 0 },
-    { id: 9, q: 'Bilangan desimal 13 dalam bentuk biner adalah ....', opts: ['1100','1110','1101','1011'], ans: 2 },
-    { id: 10, q: 'Bilangan biner 1010 jika dikonversi ke desimal menjadi ....', opts: ['8','9','10','11'], ans: 2 },
-  ];
-}
-function saveSoalToStorage(arr) { localStorage.setItem(SOAL_KEY, JSON.stringify(arr)); }
-
-function loadSoal() {
-  const soals = getSoalFromStorage();
-  document.getElementById('soal-count').textContent = soals.length;
-  document.getElementById('stat-soal').textContent = soals.length;
-  const LABELS = ['A','B','C','D'];
-  document.getElementById('soal-list').innerHTML = soals.length
-    ? soals.map((s, i) => `
-      <div class="soal-item">
-        <div class="soal-q">${i+1}. ${s.q}</div>
-        <div class="soal-opts">
-          ${s.opts.map((o, j) => `<span class="soal-opt ${j === s.ans ? 'correct' : ''}">${LABELS[j]}. ${o}</span>`).join('')}
-        </div>
-        <div class="soal-actions">
-          <button class="btn btn-warning btn-sm" onclick="openEditSoal(${s.id})">✏️ Edit</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteSoal(${s.id},'${s.q.substring(0,30)}...')">🗑️ Hapus</button>
-        </div>
-      </div>`).join('')
-    : '<div class="empty"><div class="icon">❓</div>Belum ada soal</div>';
+async function loadSoal() {
+  document.getElementById('soal-list').innerHTML = '<div class="loading">⏳ Memuat...</div>';
+  try {
+    const rows = await sbGet('questions', 'select=*&order=id.asc');
+    cachedSoal = rows;
+    document.getElementById('soal-count').textContent = rows.length;
+    document.getElementById('stat-soal').textContent = rows.length;
+    const LABELS = ['A','B','C','D'];
+    document.getElementById('soal-list').innerHTML = rows.length
+      ? rows.map((s, i) => {
+          const opts = [s.opt_a, s.opt_b, s.opt_c, s.opt_d];
+          const preview = s.q.length > 40 ? s.q.substring(0,40)+'...' : s.q;
+          return `
+            <div class="soal-item">
+              <div class="soal-q">${i+1}. ${s.q}</div>
+              <div class="soal-opts">
+                ${opts.map((o, j) => `<span class="soal-opt ${j === s.ans ? 'correct' : ''}">${LABELS[j]}. ${o}</span>`).join('')}
+              </div>
+              <div class="soal-actions">
+                <button class="btn btn-warning btn-sm" onclick="openEditSoal(${s.id})">✏️ Edit</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteSoal(${s.id}, \`${preview.replace(/`/g,"'")}\`)">🗑️ Hapus</button>
+              </div>
+            </div>`;
+        }).join('')
+      : '<div class="empty"><div class="icon">❓</div>Belum ada soal</div>';
+  } catch (e) { toast('Gagal memuat soal', 'error'); }
 }
 
 function openAddSoal() {
@@ -742,49 +729,56 @@ function openAddSoal() {
 }
 
 function openEditSoal(id) {
-  const soals = getSoalFromStorage();
-  const s = soals.find(x => x.id === id);
+  const s = cachedSoal.find(x => x.id === id);
   if (!s) return;
   document.getElementById('modal-soal-title').textContent = 'Edit Soal';
   document.getElementById('edit-soal-id').value = id;
   document.getElementById('s-question').value = s.q;
-  [0,1,2,3].forEach(i => document.getElementById(`s-opt${i}`).value = s.opts[i] || '');
+  document.getElementById('s-opt0').value = s.opt_a;
+  document.getElementById('s-opt1').value = s.opt_b;
+  document.getElementById('s-opt2').value = s.opt_c;
+  document.getElementById('s-opt3').value = s.opt_d;
   document.getElementById('s-ans').value = s.ans;
   document.getElementById('modal-soal-err').textContent = '';
   openModal('modal-soal');
 }
 
-function saveSoal() {
+async function saveSoal() {
   const id = document.getElementById('edit-soal-id').value;
   const q = document.getElementById('s-question').value.trim();
-  const opts = [0,1,2,3].map(i => document.getElementById(`s-opt${i}`).value.trim());
+  const opt_a = document.getElementById('s-opt0').value.trim();
+  const opt_b = document.getElementById('s-opt1').value.trim();
+  const opt_c = document.getElementById('s-opt2').value.trim();
+  const opt_d = document.getElementById('s-opt3').value.trim();
   const ans = parseInt(document.getElementById('s-ans').value);
   const err = document.getElementById('modal-soal-err');
   err.textContent = '';
   if (!q) { err.textContent = 'Pertanyaan wajib diisi.'; return; }
-  if (opts.some(o => !o)) { err.textContent = 'Semua opsi jawaban wajib diisi.'; return; }
+  if (!opt_a || !opt_b || !opt_c || !opt_d) { err.textContent = 'Semua opsi jawaban wajib diisi.'; return; }
 
-  let soals = getSoalFromStorage();
-  if (id) {
-    soals = soals.map(s => s.id === parseInt(id) ? { ...s, q, opts, ans } : s);
-    toast('✅ Soal berhasil diperbarui');
-  } else {
-    const newId = soals.length ? Math.max(...soals.map(s => s.id)) + 1 : 1;
-    soals.push({ id: newId, q, opts, ans });
-    toast('✅ Soal berhasil ditambahkan');
-  }
-  saveSoalToStorage(soals);
-  closeModal('modal-soal');
-  loadSoal();
+  const saveBtn = document.querySelector('#modal-soal .btn-primary');
+  saveBtn.textContent = 'Menyimpan...'; saveBtn.disabled = true;
+  try {
+    if (id) {
+      await sbPatch('questions', `id=eq.${id}`, { q, opt_a, opt_b, opt_c, opt_d, ans });
+      toast('✅ Soal berhasil diperbarui');
+    } else {
+      await sbPost('questions', { q, opt_a, opt_b, opt_c, opt_d, ans });
+      toast('✅ Soal berhasil ditambahkan');
+    }
+    closeModal('modal-soal');
+    loadSoal();
+  } catch (e) { toast('Gagal menyimpan soal', 'error'); }
+  saveBtn.textContent = 'Simpan'; saveBtn.disabled = false;
 }
 
 function deleteSoal(id, preview) {
-  confirm('Hapus Soal?', `Hapus soal "${preview}"?`, () => {
-    let soals = getSoalFromStorage();
-    soals = soals.filter(s => s.id !== id);
-    saveSoalToStorage(soals);
-    toast('🗑️ Soal dihapus');
-    loadSoal();
+  confirm('Hapus Soal?', `Hapus soal "${preview}"?`, async () => {
+    try {
+      await sbDelete('questions', `id=eq.${id}`);
+      toast('🗑️ Soal dihapus');
+      loadSoal();
+    } catch { toast('Gagal menghapus soal', 'error'); }
   });
 }
 

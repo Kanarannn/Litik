@@ -328,31 +328,41 @@ function showMateri(key) {
 }
 
 // ── KUIS ────────────────────────────────────────────────────
-const QUESTIONS = [
-  { q: 'Angka yang digunakan dalam sistem bilangan biner adalah ....', opts: ['0 dan 1', '0 sampai 7', '0 sampai 9', '0 sampai F'], ans: 0 },
-  { q: 'Nilai tempat pada bilangan biner dihitung berdasarkan pangkat dari ....', opts: ['5', '8', '10', '2'], ans: 3 },
-  { q: 'Hasil konversi bilangan biner 10001 ke desimal adalah ....', opts: ['15', '16', '17', '18'], ans: 2 },
-  { q: 'Bilangan desimal 10 jika dikonversi ke biner menjadi ....', opts: ['1001', '1010', '1100', '1110'], ans: 1 },
-  { q: 'Bilangan desimal 15 dalam bentuk biner adalah ....', opts: ['1110', '1111', '1011', '1101'], ans: 1 },
-  { q: 'Bilangan Biner 1100 jika dikonversi ke desimal menjadi ....', opts: ['10', '11', '12', '13'], ans: 2 },
-  { q: 'Bilangan Biner 1011 jika dikonversi ke desimal menjadi ....', opts: ['9', '10', '11', '12'], ans: 2 },
-  { q: 'Contoh penerapan bilangan biner dalam kehidupan sehari-hari terdapat pada ....', opts: ['Komputer & Smartphone', 'Buku tulis', 'Penggaris', 'Pensil'], ans: 0 },
-  { q: 'Bilangan desimal 13 dalam bentuk biner adalah ....', opts: ['1100', '1110', '1101', '1011'], ans: 2 },
-  { q: 'Bilangan biner 1010 jika dikonversi ke desimal menjadi ....', opts: ['8', '9', '10', '11'], ans: 2 },
-];
+let QUESTIONS = []; // diisi dari Supabase saat startKuis
 
 let kuisState = { idx: 0, score: 0, benar: 0, salah: 0 };
 const LABELS = ['A', 'B', 'C', 'D'];
 
-function startKuis() {
+async function startKuis() {
   kuisState = { idx: 0, score: 0, benar: 0, salah: 0 };
   showScreen('screen-kuis-active');
-  renderQuestion();
+
+  // Tampilkan loading sementara soal diambil
+  document.getElementById('kuis-question').textContent = '⏳ Memuat soal...';
+  document.getElementById('kuis-options').innerHTML = '';
+
+  try {
+    const rows = await sbGet('questions', 'select=*&order=id.asc');
+    if (!rows || !rows.length) {
+      document.getElementById('kuis-question').textContent = '❌ Soal belum tersedia. Hubungi admin.';
+      return;
+    }
+    // Acak urutan soal
+    QUESTIONS = rows
+      .sort(() => Math.random() - 0.5)
+      .map(r => ({
+        q: r.q,
+        opts: [r.opt_a, r.opt_b, r.opt_c, r.opt_d],
+        ans: r.ans
+      }));
+    renderQuestion();
+  } catch (e) {
+    document.getElementById('kuis-question').textContent = '❌ Gagal memuat soal. Periksa koneksi.';
+  }
 }
 
 function renderQuestion() {
   const q = QUESTIONS[kuisState.idx];
-  document.getElementById('kuis-q-num').textContent = `${kuisState.idx + 1} / ${QUESTIONS.length}`;
   document.getElementById('kuis-question').textContent = q.q;
   const optsCont = document.getElementById('kuis-options');
   optsCont.innerHTML = '';
@@ -361,7 +371,6 @@ function renderQuestion() {
     btn.className = 'opt-btn';
     btn.innerHTML = `<span class="opt-label">${LABELS[i]}.</span> ${opt}`;
     btn.onclick = () => selectAnswer(i);
-    btn.textContent = opt;
     optsCont.appendChild(btn);
   });
 }
