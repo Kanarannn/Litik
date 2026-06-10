@@ -341,11 +341,11 @@ const QUESTIONS = [
   { q: 'Bilangan biner 1010 jika dikonversi ke desimal menjadi ....', opts: ['8', '9', '10', '11'], ans: 2 },
 ];
 
-let kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 15 };
+let kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 20 };
 const LABELS = ['A', 'B', 'C', 'D'];
 
 function startKuis() {
-  kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 15 };
+  kuisState = { idx: 0, score: 0, benar: 0, salah: 0, timer: null, timeLeft: 20 };
   showScreen('screen-kuis-active');
   renderQuestion();
 }
@@ -368,8 +368,8 @@ function renderQuestion() {
 }
 
 function startTimer() {
-  kuisState.timeLeft = 15;
-  updateTimerUI(15);
+  kuisState.timeLeft = 20;
+  updateTimerUI(20);
   kuisState.timer = setInterval(() => {
     kuisState.timeLeft--;
     updateTimerUI(kuisState.timeLeft);
